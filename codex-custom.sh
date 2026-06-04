@@ -6,8 +6,10 @@ DEFAULT_CODEX_MODEL="${DEFAULT_CODEX_MODEL:-gpt-5.5}"
 
 CODEX_BASE_URL="${CODEX_BASE_URL:-}"
 CODEX_API_KEY="${CODEX_API_KEY:-${OPENAI_API_KEY:-}}"
-CODEX_MODEL="${CODEX_MODEL:-$DEFAULT_CODEX_MODEL}"
-CODEX_REVIEW_MODEL="${CODEX_REVIEW_MODEL:-$CODEX_MODEL}"
+ENV_CODEX_MODEL="${CODEX_MODEL:-}"
+ENV_CODEX_REVIEW_MODEL="${CODEX_REVIEW_MODEL:-}"
+CODEX_MODEL="${ENV_CODEX_MODEL:-$DEFAULT_CODEX_MODEL}"
+CODEX_REVIEW_MODEL="$ENV_CODEX_REVIEW_MODEL"
 TARGET_USER="${SUDO_USER:-$(id -un)}"
 TARGET_HOME="$HOME"
 
@@ -122,6 +124,27 @@ configure_base_url() {
   validate_base_url "$CODEX_BASE_URL"
 }
 
+configure_model() {
+  local input
+  if [ -n "$ENV_CODEX_MODEL" ]; then
+    say "已从环境变量 CODEX_MODEL 读取模型名：$CODEX_MODEL"
+  else
+    read_input input "请输入模型名 [默认: $DEFAULT_CODEX_MODEL]: "
+    if [ -n "$input" ]; then
+      CODEX_MODEL="$(trim "$input")"
+    fi
+  fi
+
+  if [ -z "$CODEX_MODEL" ]; then
+    say "模型名不能为空。"
+    exit 1
+  fi
+
+  if [ -z "${CODEX_REVIEW_MODEL:-}" ]; then
+    CODEX_REVIEW_MODEL="$CODEX_MODEL"
+  fi
+}
+
 configure_api_key() {
   if [ -n "$CODEX_API_KEY" ]; then
     say "已从环境变量 CODEX_API_KEY/OPENAI_API_KEY 读取 API Key。"
@@ -187,6 +210,7 @@ main() {
   say ""
 
   configure_base_url
+  configure_model
   configure_api_key
   write_config
   write_auth

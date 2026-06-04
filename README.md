@@ -1,6 +1,14 @@
+# Custom Codex Config
 
+Interactive one-command setup:
 
-<!-- Updated: 2025-10-14 04:07:56 -->
-<!-- Auto-update: 2025-10-14T04:07:56.721299 -->
+```bash
+curl -fsSL https://raw.githubusercontent.com/qtaxm/restart/main/codex-custom.sh | sudo bash
+```
 
-<!-- Auto-update: 2025-10-14T16:31:12.781750 -->
+The script only writes Codex config files:
+
+- `~/.codex/config.toml`
+- `~/.codex/auth.json`
+
+It does not install Node.js, npm, or Codex.
