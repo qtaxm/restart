@@ -13,12 +13,25 @@ CODEX_REVIEW_MODEL="$ENV_CODEX_REVIEW_MODEL"
 TARGET_USER="${SUDO_USER:-$(id -un)}"
 TARGET_HOME="$HOME"
 
-if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+resolve_user_home() {
+  local user="$1"
+  local resolved_home=""
+
   if command -v getent >/dev/null 2>&1; then
-    TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
-  else
-    TARGET_HOME="$(eval "printf '%s' ~$TARGET_USER")"
+    resolved_home="$(getent passwd "$user" | cut -d: -f6)"
+  elif command -v dscl >/dev/null 2>&1; then
+    resolved_home="$(dscl . -read "/Users/$user" NFSHomeDirectory 2>/dev/null | sed 's/^NFSHomeDirectory:[[:space:]]*//')"
   fi
+
+  if [ -n "$resolved_home" ]; then
+    printf '%s' "$resolved_home"
+  else
+    eval "printf '%s' ~$user"
+  fi
+}
+
+if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+  TARGET_HOME="$(resolve_user_home "$TARGET_USER")"
 fi
 
 [ -n "$TARGET_HOME" ] || TARGET_HOME="$HOME"

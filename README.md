@@ -1,9 +1,9 @@
 # Custom Codex Config
 
-Interactive one-command setup:
+macOS interactive one-command setup:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qtaxm/restart/main/codex-custom.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/qtaxm/restart/main/codex-custom.sh | bash
 ```
 
 The script only writes Codex config files:
@@ -12,3 +12,5 @@ The script only writes Codex config files:
 - `~/.codex/auth.json`
 
 It does not install Node.js, npm, or Codex.
+
+If you run it with `sudo bash`, it will still write to the original macOS user's `~/.codex` directory.
