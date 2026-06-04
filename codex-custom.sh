@@ -55,10 +55,21 @@ trim() {
 normalize_base_url() {
   local value
   value="$(trim "$1")"
+  value="$(printf '%s' "$value" | sed -E 's#^(https?://[^/]+)/:([0-9]+)(/.*)?$#\1:\2\3#')"
   while [ "${value%/}" != "$value" ]; do
     value="${value%/}"
   done
   printf '%s' "$value"
+}
+
+base_url_has_path() {
+  local value="$1"
+  value="${value#http://}"
+  value="${value#https://}"
+  case "$value" in
+    */*) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 validate_base_url() {
@@ -95,6 +106,21 @@ read_input() {
   read -r -u 3 -p "$prompt" "$var_name"
 }
 
+confirm_yes() {
+  local prompt="$1"
+  local default_yes="${2:-no}"
+  local answer
+  read_input answer "$prompt"
+  if [ -z "$answer" ]; then
+    [ "$default_yes" = "yes" ]
+    return
+  fi
+  case "$answer" in
+    y|Y|yes|YES|Yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 read_secret() {
   local var_name="$1"
   local prompt="$2"
@@ -119,8 +145,10 @@ backup_if_exists() {
 
 configure_base_url() {
   local input
+  local from_env="no"
   if [ -n "$CODEX_BASE_URL" ]; then
     input="$CODEX_BASE_URL"
+    from_env="yes"
     say "已从环境变量 CODEX_BASE_URL 读取接口地址。"
   else
     read_input input "请输入自定义接口地址 [默认: $DEFAULT_CODEX_BASE_URL]: "
@@ -135,6 +163,14 @@ configure_base_url() {
     exit 1
   fi
   validate_base_url "$CODEX_BASE_URL"
+
+  if ! base_url_has_path "$CODEX_BASE_URL"; then
+    if [ "$from_env" = "yes" ]; then
+      say "提示：接口地址没有路径。OpenAI 兼容服务通常需要 /v1，例如：$CODEX_BASE_URL/v1"
+    elif confirm_yes "检测到接口地址没有路径，是否自动追加 /v1？[Y/n]: " "yes"; then
+      CODEX_BASE_URL="$CODEX_BASE_URL/v1"
+    fi
+  fi
 }
 
 configure_model() {
